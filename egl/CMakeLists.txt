@@ -1,4 +1,4 @@
 
 
-add_executable(a a.c)
-target_link_libraries(a GL EGL)
+add_executable(test test.c)
+target_link_libraries(test GL EGL)

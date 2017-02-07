@@ -50,17 +50,14 @@ int main(int argc, char *argv[]) {
     EGLContext eglCtx = eglCreateContext(display, config, EGL_NO_CONTEXT, NULL);
 
     eglMakeCurrent(display, surface, surface, eglCtx);
-    
+
     // from now on use your OpenGL context
     glClearColor(1.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glFlush();
     eglSwapBuffers(display, surface);
-    unsigned char pixels[WIDTH*HEIGHT*4] = {
-        0xFF, 0x00, 0x00,
-        0x00, 0xFF, 0x00,
-        0x00, 0x00, 0xFF,
-    }; 
+    unsigned char pixels[WIDTH*HEIGHT*4];
+
     glReadPixels(0,0, WIDTH, HEIGHT,GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, pixels);
     stbi_write_png("a.png", WIDTH, HEIGHT, 4, pixels, WIDTH*4);
 
