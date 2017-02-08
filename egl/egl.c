@@ -77,9 +77,10 @@ void egl_write_stream() {
     glReadPixels(0, 0, BUFFER_WIDTH, BUFFER_HEIGHT,
                  GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, pixels);
 
-    fwrite(pixels, BUFFER_WIDTH*BUFFER_HEIGHT*4,1,out);
+    fwrite(pixels, BUFFER_WIDTH*BUFFER_HEIGHT, 4, out);
 }
 void egl_close_stream() {
+    fflush(out);
     fclose(out);
 }
 
