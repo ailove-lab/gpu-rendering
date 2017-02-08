@@ -1,6 +1,12 @@
 
 #include <stdio.h>
+
+#include <GL/gl.h>
 #include <EGL/egl.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 #include "egl.h"
 
 static const EGLint configAttribs[] = {
@@ -26,28 +32,51 @@ static EGLConfig config;
 static EGLSurface surface;
 static EGLContext context;
 
+static void check_err();
+
 void egl_init() {
 
     // 1. Initialize EGL
     display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     eglInitialize(display, &major, &minor);
+    check_err();
     printf("version %d.%d\n", major, minor);
     // 2. Select an appropriate configuration
     eglChooseConfig(display, configAttribs, &config, 1, &numConfigs);
+    check_err();
     // 3. Create a surface
     surface = eglCreatePbufferSurface(display, config, pbufferAttribs);
+    check_err();
     // 4. Bind the API
     eglBindAPI(EGL_OPENGL_API);
+    check_err();
     // 5. Create a context and make it current
     context = eglCreateContext(display, config, EGL_NO_CONTEXT, NULL);
+    check_err();
     eglMakeCurrent(display, surface, surface, context);
+    check_err();
 }
 
 void egl_swap() {
     eglSwapBuffers(display, surface);
 }
 
+void egl_save(char const* filename) {
+    unsigned char pixels[BUFFER_WIDTH*BUFFER_HEIGHT*4];
+    glReadPixels(0, 0, BUFFER_WIDTH, BUFFER_HEIGHT,GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, pixels);
+    stbi_write_png(filename, BUFFER_WIDTH, BUFFER_HEIGHT, 4, pixels, BUFFER_WIDTH*4);
+}
+
 void egl_close() {
     // 6. Terminate EGL when finished
     eglTerminate(display);
+}
+
+static void check_err() {
+   EGLint err = eglGetError();
+   if(err!=0x3000) {
+       fprintf(stderr, "Error %h\n", err);
+   } else {
+       printf("OK\n");
+   }
 }

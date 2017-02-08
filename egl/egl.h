@@ -5,4 +5,5 @@
 
 void egl_init();
 void egl_swap();
+void egl_save(char const* filename);
 void egl_close();
