@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <unistd.h>
 
 #include <GL/gl.h>
 #include <EGL/egl.h>
@@ -61,10 +62,25 @@ void egl_swap() {
     eglSwapBuffers(display, surface);
 }
 
+unsigned char pixels[BUFFER_WIDTH*BUFFER_HEIGHT*4];
 void egl_save(char const* filename) {
-    unsigned char pixels[BUFFER_WIDTH*BUFFER_HEIGHT*4];
-    glReadPixels(0, 0, BUFFER_WIDTH, BUFFER_HEIGHT,GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, pixels);
+    glReadPixels(0, 0, BUFFER_WIDTH, BUFFER_HEIGHT,
+                 GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, pixels);
     stbi_write_png(filename, BUFFER_WIDTH, BUFFER_HEIGHT, 4, pixels, BUFFER_WIDTH*4);
+}
+
+static FILE* out;
+void egl_init_stream() {
+   out = fdopen(dup(fileno(stdout)), "wb");
+}
+void egl_write_stream() {
+    glReadPixels(0, 0, BUFFER_WIDTH, BUFFER_HEIGHT,
+                 GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, pixels);
+
+    fwrite(pixels, BUFFER_WIDTH*BUFFER_HEIGHT*4,1,out);
+}
+void egl_close_stream() {
+    fclose(out);
 }
 
 void egl_close() {
