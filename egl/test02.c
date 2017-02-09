@@ -7,6 +7,8 @@
 int main(int argc, char *argv[]) {
 
     egl_init();
+    scene_init();
+
     egl_init_stream();
     char name[32];
     for(int i=0; i<512; i++) {
@@ -16,6 +18,8 @@ int main(int argc, char *argv[]) {
         egl_write_stream();
     }
     egl_close_stream();
+
+    scene_close();
     egl_close();
 
     return 0;
