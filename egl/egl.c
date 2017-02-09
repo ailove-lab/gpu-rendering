@@ -46,10 +46,7 @@ static void check_err();
    fprintf(stderr, "%*s: %d\n", 24, #attr, val);
 
 // https://www.khronos.org/registry/EGL/sdk/docs/man/html/eglChooseConfig.xhtml
-<<<<<<< HEAD
 // https://www.khronos.org/files/egl-1-4-quick-reference-card.pdf
-=======
->>>>>>> 37282358b2d8090afc78c42a0d118692f34eae8c
 static void egl_print_available_configs() {
     EGLint ccnt, n;
     eglGetConfigs(display, NULL, 0, &ccnt);
