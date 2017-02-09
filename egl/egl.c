@@ -45,6 +45,8 @@ static void check_err();
    eglGetConfigAttrib(display, configs[i], attr, &val); \
    fprintf(stderr, "%*s: %d\n", 24, #attr, val);
 
+// https://www.khronos.org/registry/EGL/sdk/docs/man/html/eglChooseConfig.xhtml
+// https://www.khronos.org/files/egl-1-4-quick-reference-card.pdf
 static void egl_print_available_configs() {
     EGLint ccnt, n;
     eglGetConfigs(display, NULL, 0, &ccnt);
