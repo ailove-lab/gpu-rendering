@@ -4,8 +4,9 @@
         -f rawvideo \
         -pix_fmt rgb32 \
         -s:v 512x512 \
-        -r 10 \
+        -r 30 \
         -i - \
         -c:v libx264 \
         -y \
         test02.mp4
+ffplay test02.mp4

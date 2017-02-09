@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
     egl_init();
     egl_init_stream();
     char name[32];
-    for(int i=0; i<30; i++) {
+    for(int i=0; i<512; i++) {
         scene_draw(i);
         egl_swap();
         sprintf(name, "test_%d.png", i);

@@ -5,6 +5,10 @@
 
 float rnd() { return (float)rand()/(float)(RAND_MAX); }
 
+void scene_init() {
+  
+}
+
 void scene_draw(int frame) {
     // from now on use your OpenGL context
     glClearColor(0.0, 0.0, 0.0, 0.0);
