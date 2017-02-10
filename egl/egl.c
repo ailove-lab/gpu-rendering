@@ -8,6 +8,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#include "colors.h"
 #include "egl.h"
 
 static const EGLint configAttribs[] = {
@@ -96,12 +97,12 @@ static void print_err(GLint err_id) {
 #define ERR(res, cmd, ...) {                          \
     res = cmd(__VA_ARGS__);                           \
     EGLint err_id = eglGetError();                    \
-    fprintf(stderr, #cmd" - ");                        \
+    fprintf(stderr, #cmd" - ");                       \
     if(err_id != EGL_SUCCESS) {                       \
         print_err(err_id);                            \
         return -1;                                    \
     } else {                                          \
-        fprintf(stderr, "EGL_SUCCESS\n");             \
+        fprintf(stderr, KGRN "OK\n" KRST);            \
     }                                                 \
 }
 #else
