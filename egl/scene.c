@@ -1,5 +1,5 @@
 #include <GL/glew.h>
-#include <GL/gl.h>
+#include <GLES2/gl2.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -23,6 +23,7 @@ int init_resources() {
     "void main(void) {                        "
     "  gl_Position = vec4(coord2d, 0.0, 1.0); "
     "}";
+
   glShaderSource(vs, 1, &vs_source, NULL);
   glCompileShader(vs);
   glGetShaderiv(vs, GL_COMPILE_STATUS, &compile_ok);
@@ -39,6 +40,7 @@ int init_resources() {
     "  gl_FragColor[1] = 0.0; "
     "  gl_FragColor[2] = 1.0; "
     "}";
+
   glShaderSource(fs, 1, &fs_source, NULL);
   glCompileShader(fs);
   glGetShaderiv(fs, GL_COMPILE_STATUS, &compile_ok);
@@ -113,7 +115,7 @@ void scene_draw(int frame) {
     glEnableVertexAttribArray(attribute_coord2d);
     GLfloat triangle_vertices[] = {
         0.0,  0.8,
-        -0.8, -0.8,
+       -0.8, -0.8,
         0.8, -0.8,
     };
     /* Describe our vertices array to OpenGL (it can't guess its format automatically) */
