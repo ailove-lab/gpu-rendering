@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
 
     char name[32];
     for(int i=0; i<5; i++) {
-        scene_draw(i);
+        scene_draw(i); 
         egl_swap();
         sprintf(name, "test_%d.png", i);
         egl_save(name);
