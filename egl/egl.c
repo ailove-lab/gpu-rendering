@@ -99,6 +99,7 @@ static void print_err(GLint err_id) {
 }
 #undef ERR_CASE
 
+#define DEBUG
 #ifdef DEBUG
 #define ERR(res, cmd, ...) {               \
     res = cmd(__VA_ARGS__);                \
