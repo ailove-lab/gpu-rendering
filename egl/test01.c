@@ -6,7 +6,9 @@
 
 int main(int argc, char *argv[]) {
 
-    egl_init();
+    int err = egl_init();
+    if(err<0) return err;
+
     scene_init();
 
     char name[32];

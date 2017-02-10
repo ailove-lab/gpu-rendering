@@ -71,17 +71,47 @@ static void egl_print_available_configs() {
 
 #define DEBUG
 
+#define ERR_CASE(err_id, text) case err_id : fprintf(stderr, "%s\n%s\n", #err_id, text); break; 
+static void print_err(GLint err_id) {
+    switch(err_id) {
+        ERR_CASE(EGL_SUCCESS, "The last function succeeded without error." )
+        ERR_CASE(EGL_NOT_INITIALIZED, "EGL is not initialized, or could not be initialized, for the specified EGL display connection." )
+        ERR_CASE(EGL_BAD_ACCESS, "EGL cannot access a requested resource (for example a context is bound in another thread)." )
+        ERR_CASE(EGL_BAD_ALLOC, "EGL failed to allocate resources for the requested operation." )
+        ERR_CASE(EGL_BAD_ATTRIBUTE, "An unrecognized attribute or attribute value was passed in the attribute list." )
+        ERR_CASE(EGL_BAD_CONTEXT, "An EGLContext argument does not name a valid EGL rendering context." )
+        ERR_CASE(EGL_BAD_CONFIG, "An EGLConfig argument does not name a valid EGL frame buffer configuration." )
+        ERR_CASE(EGL_BAD_CURRENT_SURFACE, "The current surface of the calling thread is a window, pixel buffer or pixmap that is no longer valid." )
+        ERR_CASE(EGL_BAD_DISPLAY, "An EGLDisplay argument does not name a valid EGL display connection." )
+        ERR_CASE(EGL_BAD_SURFACE, "An EGLSurface argument does not name a valid surface (window, pixel buffer or pixmap) configured for GL rendering." )
+        ERR_CASE(EGL_BAD_MATCH, "Arguments are inconsistent (for example, a valid context requires buffers not supplied by a valid surface)." )
+        ERR_CASE(EGL_BAD_PARAMETER, "One or more argument values are invalid." )
+        ERR_CASE(EGL_BAD_NATIVE_PIXMAP, "A NativePixmapType argument does not refer to a valid native pixmap." )
+        ERR_CASE(EGL_BAD_NATIVE_WINDOW, "A NativeWindowType argument does not refer to a valid native window." )
+        ERR_CASE(EGL_CONTEXT_LOST, "A power management event has occurred. The application must destroy all contexts and reinitialise OpenGL ES state and objects to continue rendering." )
+    }
+}
+
 #ifdef DEBUG
 #define ERR(res, cmd, ...) {                          \
     res = cmd(__VA_ARGS__);                           \
-    EGLint err = eglGetError();                       \
-    fprintf(stderr, #cmd"\t");                        \
-    if(err!=0x3000) fprintf(stderr, "ERR %h\n", err); \
-    else printf("OK\n");                              \
+    EGLint err_id = eglGetError();                    \
+    fprintf(stderr, #cmd" - ");                        \
+    if(err_id != EGL_SUCCESS) {                       \
+        print_err(err_id);                            \
+        return -1;                                    \
+    } else {                                          \
+        fprintf(stderr, "EGL_SUCCESS\n");             \
+    }                                                 \
 }
 #else
-#define ERR(res, cmd, ...) res = cmd(__VA_ARGS__);
+#define ERR(res, cmd, ...) {                    \
+        res = cmd(__VA_ARGS__);                 \
+        EGLint err_id = eglGetError();          \
+        if(err_id != EGL_SUCCESS) return -1;    \
+}
 #endif
+
 
 /*
   https://jan.newmarch.name/Wayland/EGL/
@@ -108,7 +138,7 @@ static void egl_print_available_configs() {
   eglCreateContext.
 */
 
-void egl_init() {
+int egl_init() {
 
     EGLBoolean res;
 
@@ -130,6 +160,8 @@ void egl_init() {
     // 5. Create a context and make it current
     ERR(context, eglCreateContext, display, config, EGL_NO_CONTEXT, contextAttribs);
     ERR(res, eglMakeCurrent, display, surface, surface, context);
+
+    return 0;
 }
 
 void egl_swap() {
