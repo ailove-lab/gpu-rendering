@@ -15,11 +15,12 @@ static void context_info() {
     INFO(GL_RENDERER);
     INFO(GL_VERSION);
     INFO(GL_SHADING_LANGUAGE_VERSION);
-
     // INFO(GL_EXTENSIONS);
 }
 
-void scene_init() { context_info(); }
+void scene_init() { 
+    context_info(); 
+}
 
 void scene_draw(int frame) {
   // from now on use your OpenGL context
