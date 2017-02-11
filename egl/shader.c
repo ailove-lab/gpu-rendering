@@ -1,27 +1,27 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
-#include <GL/gl.h>
 #include <GLES3/gl31.h>
 
 #include "shader.h"
 
-static void load_file(char*  filename, char** buf);
-static void check_shader(GLuint shader);
+static void file_load(char*  filename, char** buf);
+static void shader_check(GLuint shader);
 
 shader_t
 shader_load(char* shader_name) {
+
+    shader_t shader;
 
     char* v_shader_txt;
     char* f_shader_txt;
 
     char file_name[128];
     sprintf(file_name, "%s.v.glsl", shader_name);
-    load_file(shader_name, &v_shader_txt);
+    file_load(file_name, &v_shader_txt);
     sprintf(file_name, "%s.f.glsl", shader_name);
-    load_file(shader_name, &f_shader_txt);
-
-    // TODO CHECK LOADING
+    file_load(file_name, &f_shader_txt);
 
     // VERTEX
     printf("vertext shader\n");
@@ -30,7 +30,7 @@ shader_load(char* shader_name) {
     GLint v_shader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(v_shader, 1, (const char**)&v_shader_txt, NULL);
     glCompileShader(v_shader);
-    check_shader(v_shader);
+    shader_check(v_shader);
     
     // FRAGMENT
     printf("fragment shader\n");
@@ -39,27 +39,30 @@ shader_load(char* shader_name) {
     GLint f_shader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(f_shader, 1, (const char**)&f_shader_txt, NULL);
     glCompileShader(f_shader);
-    check_shader(f_shader);
+    shader_check(f_shader);
 
-    // PROGRAMM
-    GLint program = glCreateProgram();
-    glAttachShader(program, v_shader);
-    glAttachShader(program, f_shader);
-    glLinkProgram(program);
+    // PROGRAM
+    shader.program = glCreateProgram();
+    glAttachShader(shader.program, v_shader);
+    glAttachShader(shader.program, f_shader);
+    glLinkProgram(shader.program);
 
-    GLint mvp, col, pos;
-    mvp = glGetUniformLocation(program, "mvp");
-    col = glGetUniformLocation(program, "col");
-    pos = glGetAttribLocation(program, "pos");
+    shader.mvp = glGetUniformLocation(shader.program, "mvp");
+    shader.col = glGetUniformLocation(shader.program, "col");
+    shader.pos = glGetAttribLocation(shader.program, "pos");
 
+    // it's good practice to delete shaders righ after linking to program
+    glDeleteShader(f_shader);
+    glDeleteShader(v_shader);
     free(v_shader_txt);
     free(f_shader_txt);
-
-    static GLint mvp_location, vpos_location, col_location;
-    return (shader_t) { program, mvp, col, pos };
+    
+    return shader;
 }
 
-static void check_shader(GLuint shader) {
+
+static void
+shader_check(GLuint shader) {
     GLint isCompiled = 0;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
     if(isCompiled == GL_FALSE) {
@@ -77,17 +80,17 @@ static void check_shader(GLuint shader) {
 }
 
 void shader_clear(shader_t* shader) {
-    // TODO cleanup v_shader, f_shader_, program
+    glDeleteProgram(shader->program);
 }
 
 static void
-load_file(
+file_load(
     char*  filename,
     char** buf) {
 
     long length = 0;
     FILE* fp = fopen (filename, "rb");
-
+    assert(fp>0);
     if(fp) {
         fseek (fp, 0, SEEK_END);
         length = ftell(fp);

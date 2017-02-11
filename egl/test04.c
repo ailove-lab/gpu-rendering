@@ -1,4 +1,3 @@
-
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GLES3/gl31.h>
@@ -6,27 +5,50 @@
 #include <fcntl.h>
 #include <gbm.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "shader.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
-/* a dummy compute shader that does nothing */
-#define COMPUTE_SHADER_SRC "          \
-#version 310 es\n                                                       \
-                                                                        \
-layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;       \
-                                                                        \
-void main(void) {                                                       \
-   /* awesome compute code here */                                      \
-}                                                                       \
-"
+#define FALSE 0
+#define TRUE 1
+
+#define WIDTH  256
+#define HEIGHT 256
+
 int32_t fd;
 struct gbm_device *gbm;
 EGLDisplay egl_dpy;
-GLuint shader_program;
 EGLContext core_ctx;
+
+GLuint program;
+
+void egl_init();
+void gl_info();
+GLuint gl_load_shader( GLenum type, const char *shaderSrc );
+int gl_init();
+void gl_do();
+void gl_clear();
+void gl_write(char const* filename);
+void egl_clear();
+
+int32_t
+main (int32_t argc, char* argv[]) {
+
+    egl_init();
+    gl_info();
+    gl_init();
+
+    gl_do();
+    gl_write("test04.png");
+    gl_clear();
+    egl_clear();
+
+    return 0;
+}
 
 void egl_init() {
 
@@ -49,18 +71,30 @@ void egl_init() {
   assert(strstr(egl_extension_st, "EGL_KHR_create_context") != NULL);
   assert(strstr(egl_extension_st, "EGL_KHR_surfaceless_context") != NULL);
 
-  static const EGLint config_attribs[] = {EGL_RENDERABLE_TYPE,
-                                          EGL_OPENGL_ES3_BIT_KHR, EGL_NONE};
+  static const EGLint config_attribs[] = {
+      EGL_RENDERABLE_TYPE,  EGL_OPENGL_ES3_BIT_KHR,
+      EGL_NONE
+  };
   EGLConfig cfg;
   EGLint count;
 
   res = eglChooseConfig(egl_dpy, config_attribs, &cfg, 1, &count);
   assert(res);
 
+  static const EGLint pbuffer_attribs[] = {
+      EGL_WIDTH , WIDTH ,
+      EGL_HEIGHT, HEIGHT,
+      EGL_NONE,
+  };
+  res = eglCreatePbufferSurface(egl_dpy, cfg, pbuffer_attribs);
+
   res = eglBindAPI(EGL_OPENGL_ES_API);
   assert(res);
-
-  static const EGLint attribs[] = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE};
+  
+  static const EGLint attribs[] = {
+      EGL_CONTEXT_CLIENT_VERSION, 3,
+      EGL_NONE
+  };
   core_ctx = eglCreateContext(egl_dpy, cfg, EGL_NO_CONTEXT, attribs);
   assert(core_ctx != EGL_NO_CONTEXT);
 
@@ -68,15 +102,14 @@ void egl_init() {
   assert(res);
 }
 
-void
-gl_info() {
+void gl_info() {
 
    /* print some compute limits (not strictly necessary) */
    GLint work_group_count[3] = {0};
    for (unsigned i = 0; i < 3; i++)
       glGetIntegeri_v (GL_MAX_COMPUTE_WORK_GROUP_COUNT,
-                       i,
-                       &work_group_count[i]);
+                       i, &work_group_count[i]);
+
    printf ("GL_MAX_COMPUTE_WORK_GROUP_COUNT: %d, %d, %d\n",
            work_group_count[0],
            work_group_count[1],
@@ -99,68 +132,135 @@ gl_info() {
    printf ("GL_MAX_COMPUTE_SHARED_MEMORY_SIZE: %d\n", mem_size);
 }
 
-void
+// Create a shader object, load the shader source, and
+// compile the shader.
+GLuint gl_load_shader( GLenum type, const char *shaderSrc ) {
+
+    GLuint shader;
+    GLint compiled;
+    // Create the shader object
+    shader = glCreateShader ( type );
+    if ( shader == 0 ) {
+        return 0;
+    }
+    // Load the shader source
+    glShaderSource ( shader, 1, &shaderSrc, NULL );
+    // Compile the shader
+    glCompileShader ( shader );
+    // Check the compile status
+    glGetShaderiv ( shader, GL_COMPILE_STATUS, &compiled );
+
+    if ( !compiled ) {
+        GLint infoLen = 0;
+        glGetShaderiv ( shader, GL_INFO_LOG_LENGTH, &infoLen );
+        if ( infoLen > 1 ) {
+            char *infoLog = malloc ( sizeof ( char ) * infoLen );
+
+            glGetShaderInfoLog ( shader, infoLen, NULL, infoLog );
+            printf( "Error compiling shader:\n%s\n", infoLog );
+            free ( infoLog );
+        }
+        glDeleteShader ( shader );
+        return 0;
+    }
+    return shader;
+}
+
+int
 gl_init() {
-    
-    /* setup a compute shader */
-    GLuint compute_shader = glCreateShader (GL_COMPUTE_SHADER);
 
-    assert (glGetError () == GL_NO_ERROR);
-    const char *shader_source = COMPUTE_SHADER_SRC;
+   char vShaderStr[] =
+      "#version 300 es                          \n"
+      "layout(location = 0) in vec4 vPosition;  \n"
+      "void main()                              \n"
+      "{                                        \n"
+      "   gl_Position = vPosition;              \n"
+      "}                                        \n";
 
-    glShaderSource (compute_shader, 1, &shader_source, NULL);
-    assert (glGetError () == GL_NO_ERROR);
+   char fShaderStr[] =
+      "#version 300 es                              \n"
+      "precision mediump float;                     \n"
+      "out vec4 fragColor;                          \n"
+      "void main()                                  \n"
+      "{                                            \n"
+      "   fragColor = vec4 ( 1.0, 0.0, 0.0, 1.0 );  \n"
+      "}                                            \n";
 
-    glCompileShader (compute_shader);
-    assert(glGetError() == GL_NO_ERROR);
+   GLuint vertexShader;
+   GLuint fragmentShader;
+   GLint linked;
 
-    shader_program = glCreateProgram ();
+   // Load the vertex/fragment shaders
+   vertexShader   = gl_load_shader ( GL_VERTEX_SHADER, vShaderStr );
+   fragmentShader = gl_load_shader ( GL_FRAGMENT_SHADER, fShaderStr );
 
-    glAttachShader (shader_program, compute_shader);
-    assert (glGetError () == GL_NO_ERROR);
+   // Create the program object
+   program = glCreateProgram ( );
 
-    glLinkProgram (shader_program);
-    assert (glGetError () == GL_NO_ERROR);
+   if ( program == 0 ) {
+      return 0;
+   }
 
-    glDeleteShader (compute_shader);
+   glAttachShader ( program, vertexShader );
+   glAttachShader ( program, fragmentShader );
 
-    glUseProgram (shader_program);
-    assert (glGetError () == GL_NO_ERROR);
+   // Link the program
+   glLinkProgram ( program );
+
+   // Check the link status
+   glGetProgramiv ( program, GL_LINK_STATUS, &linked );
+
+   if ( !linked ) {
+      GLint infoLen = 0;
+      glGetProgramiv ( program, GL_INFO_LOG_LENGTH, &infoLen );
+      if ( infoLen > 1 ) {
+         char *infoLog = malloc ( sizeof ( char ) * infoLen );
+         glGetProgramInfoLog ( program, infoLen, NULL, infoLog );
+         printf( "Error linking program:\n%s\n", infoLog );
+         free ( infoLog );
+      }
+      glDeleteProgram ( program );
+      return FALSE;
+   }
+
+   glClearColor ( 1.0f, 1.0f, 1.0f, 0.0f );
+   return TRUE;
 }
 
 void
 gl_do() {
-    /* dispatch computation */
-    glDispatchCompute(1, 1, 1);
-    assert(glGetError() == GL_NO_ERROR);
-    printf("Compute shader dispatched and finished successfully\n");
+    GLfloat vVertices[] = {  0.0f,  0.5f, 0.0f,
+                            -0.5f, -0.5f, 0.0f,
+                             0.5f, -0.5f, 0.0f
+    };
+    // Set the viewport
+    glViewport ( 0, 0, WIDTH, HEIGHT );
+    // Clear the color buffer
+    glClear ( GL_COLOR_BUFFER_BIT );
+    // Use the program object
+    glUseProgram( program );
+    // Load the vertex data
+    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, vVertices );
+    glEnableVertexAttribArray( 0 );
+    glDrawArrays( GL_TRIANGLES, 0, 3 );
+    
+}
+
+unsigned char pixels[WIDTH*HEIGHT*4];
+void gl_write(char const* filename) {
+    glReadPixels(0, 0, WIDTH, HEIGHT, GL_RGBA, GL_UNSIGNED_INT_24_8, pixels);
+    stbi_write_png(filename, WIDTH, HEIGHT, 4, pixels, WIDTH*4);
 }
 
 void
-gl_close(){
-    /* free stuff */
-    glDeleteProgram(shader_program);
+gl_clear(){
+    glDeleteProgram(program);
 }
 
 void
-egl_close() {
+egl_clear() {
     eglDestroyContext(egl_dpy, core_ctx);
     eglTerminate(egl_dpy);
     gbm_device_destroy(gbm);
     close(fd);
-}
-
-int32_t
-main (int32_t argc, char* argv[]) {
-
-    egl_init();
-    gl_info();
-    gl_init();
-
-    gl_do();
-
-    gl_close();
-    egl_close();
-
-    return 0;
 }
