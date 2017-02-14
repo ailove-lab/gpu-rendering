@@ -86,7 +86,7 @@ static void context_info() {
 typedef struct {
     GLfloat x, y, z;
 } pnt_t;
-uint cnt = 100;
+uint cnt = 10;
 pnt_t* p;
 pnt_t* v;
 pnt_t* c;
@@ -113,15 +113,18 @@ void scene_draw(int frame) {
     glBegin(GL_TRIANGLE_STRIP);
 
     for(int i=0; i<cnt; i++) {
-        int j = (i+1) % cnt;
-        p[i].x += v[i].x + (p[j].x-p[i].x)/10.0;
-        if(p[i].x > 1.0 || p[i].x < -1.0) v[i].x*=-1;
-        p[i].y += v[i].y + (p[j].y-p[i].y)/10.0;
-        if(p[i].y > 1.0 || p[i].y < -1.0) v[i].y*=-1;
+        int j, k;
+        j = (i!=cnt-1) ? i+1 :     0;
+        k = (i!=    0) ? i-1 : cnt-1;
+
+        p[i].x += v[i].x;
+        if(p[i].x > 1.0 || p[i].x < -1.0) v[i].x*=-1.0;
+        p[i].y += v[i].y;
+        if(p[i].y > 1.0 || p[i].y < -1.0) v[i].y*=-1.0;
         p[i].z += v[i].z;
         if(p[i].z > 1.0 || p[i].z < -1.0) v[i].z*=-1;
         glColor4f(0.1, c[i].x, c[i].y, c[i].z);
-        glVertex3f(p[i].x, p[i].y, p[i].z);
+        glVertex3f(p[i].x, p[i].y, p[i].z);  
     }
     glEnd();
     glFlush();
