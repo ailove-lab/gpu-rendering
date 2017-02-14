@@ -10,16 +10,16 @@ int main(int argc, char *argv[]) {
     scene_init();
 
     egl_init_stream();
+    // from now on use your OpenGL context
     char name[32];
-    for(int i=0; i<512; i++) {
+    for(int i=0; i<3600; i++) {
         scene_draw(i);
         egl_swap();
-        sprintf(name, "test_%d.png", i);
         egl_write_stream();
     }
     egl_close_stream();
 
-    scene_close();
+    // scene_close();
     egl_close();
 
     return 0;

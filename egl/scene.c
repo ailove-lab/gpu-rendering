@@ -83,30 +83,51 @@ static void context_info() {
     // INFO(GL_EXTENSIONS);
 }
 
+typedef struct {
+    GLfloat x, y, z;
+} pnt_t;
+uint cnt = 100;
+pnt_t* p;
+pnt_t* v;
+pnt_t* c;
+
 void scene_init() {
     context_info();
-    init_resources();
+    p = malloc(sizeof(pnt_t)*cnt);
+    v = malloc(sizeof(pnt_t)*cnt);
+    c = malloc(sizeof(pnt_t)*cnt);
+    for(uint i=0; i<cnt; i++) {
+        float spd = 10.0 + rnd()*30.0;
+        v[i] = (pnt_t){(0.5-rnd())/spd, (0.5-rnd())/spd, (0.5-rnd())/spd};
+        p[i] = (pnt_t){0.5-rnd(), 0.5-rnd(), 0.5-rnd()};
+        c[i] = (pnt_t){rnd(), rnd(), rnd()};
+    }
 }
 
-void scene_draw_old(int frame) {
-    // from now on use your OpenGL context
+
+void scene_draw(int frame) {
+
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glShadeModel(GL_SMOOTH);
     glBegin(GL_TRIANGLE_STRIP);
-    for (int i = 0; i < 10; i++) {
-        glColor4f(rnd(), rnd(), rnd(), rnd());
-        glVertex3f((0.5 - rnd()) * 2.0, (0.5 - rnd()) * 2.0, 0);
-        glColor4f(rnd(), rnd(), rnd(), rnd());
-        glVertex3f((0.5 - rnd()) * 2.0, (0.5 - rnd()) * 2.0, 0);
-        glColor4f(rnd(), rnd(), rnd(), rnd());
-        glVertex3f((0.5 - rnd()) * 2.0, (0.5 - rnd()) * 2.0, 0);
+
+    for(int i=0; i<cnt; i++) {
+        int j = (i+1) % cnt;
+        p[i].x += v[i].x + (p[j].x-p[i].x)/10.0;
+        if(p[i].x > 1.0 || p[i].x < -1.0) v[i].x*=-1;
+        p[i].y += v[i].y + (p[j].y-p[i].y)/10.0;
+        if(p[i].y > 1.0 || p[i].y < -1.0) v[i].y*=-1;
+        p[i].z += v[i].z;
+        if(p[i].z > 1.0 || p[i].z < -1.0) v[i].z*=-1;
+        glColor4f(0.1, c[i].x, c[i].y, c[i].z);
+        glVertex3f(p[i].x, p[i].y, p[i].z);
     }
     glEnd();
     glFlush();
 }
 
-void scene_draw(int frame) {
+void scene_draw_new(int frame) {
     
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -137,5 +158,8 @@ void scene_draw(int frame) {
 }
 
 void scene_close() {
-    glDeleteProgram(program);
+    free(p);
+    free(v);
+    free(c);
+    // glDeleteProgram(program);
 }
