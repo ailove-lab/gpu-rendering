@@ -38,3 +38,14 @@
     - h264 - экспорт видеофайла
   - lua - скриптинг анимации
   - glsl - шейдер эффекты для сцен bloom/dof
+  
+* node-based editors
+
+  - https://github.com/brianchirls/Seriously.js
+  - https://webglstudio.org/
+  - http://victhorlopez.github.io/editor/
+  - https://github.com/zauner/vvvv.js
+  - https://github.com/idflood/ThreeNodes.js
+  - https://github.com/szymonkaliski/SDF-UI
+  - https://www.gsn-lib.org/index.html
+  - 
